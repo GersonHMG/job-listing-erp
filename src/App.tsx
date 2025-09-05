@@ -21,6 +21,7 @@ import { EmptyState } from "./components/EmptyState";
 import { Stat } from "./components/Stat";
 import { JobDetail } from "./components/JobDetail";
 import { JobModal } from "./components/JobModal";
+import appIcon from "./assets/app-icon.svg";
 export default function JobListingApp(): JSX.Element {
   const [jobs, setJobs] = useState<JobItem[]>(() => {
     try {
@@ -135,7 +136,7 @@ export default function JobListingApp(): JSX.Element {
       <header className="sticky top-0 z-10 bg-white/70 backdrop-blur border-b border-gray-100">
         <div className="max-w-6xl mx-auto px-4 py-4 flex items-center gap-3">
           <div className="flex-1">
-            <div className="w-8 h-8 rounded bg-gray-200" />
+            <img src={appIcon} alt="App icon" className="w-8 h-8" />
             <p className="text-sm text-gray-500">
               Crea trabajos, registra gastos y consulta la rentabilidad.
             </p>
