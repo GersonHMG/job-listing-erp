@@ -97,7 +97,7 @@ export function JobModal({
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
-        className="fixed inset-0 z-20 bg-black/30 flex items-end sm:items-center justify-center p-2"
+        className="fixed inset-0 z-20 bg-black/30 flex items-center justify-center p-2"
         onClick={onClose}
       >
         <motion.div
@@ -142,14 +142,18 @@ export function JobModal({
 
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="text-xs text-gray-500">
-                  Fecha de la cotización (dd/mm/aaaa)
-                </label>
-                <DateDMYInput value={date} onChange={(iso) => setDate(iso)} />
+                <label className="text-xs text-gray-500">Fecha de la cotización</label>
+                <DateDMYInput
+                  value={date}
+                  onChange={(iso) => setDate(iso)}
+                  placeholder=""
+                />
               </div>
               <div>
                 <label className="text-xs text-gray-500">
-                  Vencimiento factura (dd/mm/aaaa)
+                  {paid
+                    ? "Fecha de facturación"
+                    : "Vencimiento de factura"}
                 </label>
                 <DateDMYInput
                   value={dueDate}
@@ -157,6 +161,7 @@ export function JobModal({
                     setDueTouched(true);
                     setDueDate(iso);
                   }}
+                  placeholder=""
                 />
               </div>
             </div>
@@ -194,21 +199,12 @@ export function JobModal({
                 <span />
               )}
 
-              <div className="flex items-center gap-2">
-                <button
-                  type="button"
-                  onClick={onClose}
-                  className="rounded-2xl border border-gray-200 px-4 py-2 text-sm hover:bg-gray-50"
-                >
-                  Cancelar
-                </button>
-                <button
-                  type="submit"
-                  className="rounded-2xl border border-gray-900 bg-gray-900 px-4 py-2 text-sm hover:bg-black"
-                >
-                  {initial ? "Guardar cambios" : "Guardar"}
-                </button>
-              </div>
+              <button
+                type="submit"
+                className="rounded-2xl border border-gray-900 bg-gray-900 px-4 py-2 text-sm hover:bg-black"
+              >
+                {initial ? "Guardar cambios" : "Guardar"}
+              </button>
             </div>
           </form>
         </motion.div>

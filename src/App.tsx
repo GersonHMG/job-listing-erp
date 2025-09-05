@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, type JSX } from "react";
 import {
   Plus,
   Search,
@@ -15,6 +15,7 @@ import {
   storageKey,
   rid,
   daysUntil,
+  fmtDate,
 } from "./utils";
 import { EmptyState } from "./components/EmptyState";
 import { Stat } from "./components/Stat";
@@ -134,9 +135,7 @@ export default function JobListingApp(): JSX.Element {
       <header className="sticky top-0 z-10 bg-white/70 backdrop-blur border-b border-gray-100">
         <div className="max-w-6xl mx-auto px-4 py-4 flex items-center gap-3">
           <div className="flex-1">
-            <h1 className="text-2xl font-semibold tracking-tight">
-              Listado de Trabajos
-            </h1>
+            <div className="w-8 h-8 rounded bg-gray-200" />
             <p className="text-sm text-gray-500">
               Crea trabajos, registra gastos y consulta la rentabilidad.
             </p>
@@ -198,23 +197,29 @@ export default function JobListingApp(): JSX.Element {
                       <div className="pr-6">
                         <h3 className="font-medium leading-tight">{job.name}</h3>
                         {job.dueDate && (
-                          <p
-                            className={`mt-1 text-[11px] ${
-                              dLeft! < 0
-                                ? "text-rose-600"
-                                : dLeft! <= 7
-                                ? "text-amber-600"
-                                : "text-gray-500"
-                            }`}
-                          >
-                            {dLeft! >= 0
-                              ? `Factura vence en ${dLeft} día${
-                                  dLeft === 1 ? "" : "s"
-                                }`
-                              : `Vencido hace ${Math.abs(dLeft!)} día${
-                                  Math.abs(dLeft!) === 1 ? "" : "s"
-                                }`}
-                          </p>
+                          isPaid ? (
+                            <p className="mt-1 text-[11px] text-gray-500">
+                              Pago recibido: {fmtDate.format(new Date(job.dueDate))}
+                            </p>
+                          ) : (
+                            <p
+                              className={`mt-1 text-[11px] ${
+                                dLeft! < 0
+                                  ? "text-rose-600"
+                                  : dLeft! <= 7
+                                  ? "text-amber-600"
+                                  : "text-gray-500"
+                              }`}
+                            >
+                              {dLeft! >= 0
+                                ? `Factura vence en ${dLeft} día${
+                                    dLeft === 1 ? "" : "s"
+                                  }`
+                                : `Vencido hace ${Math.abs(dLeft!)} día${
+                                    Math.abs(dLeft!) === 1 ? "" : "s"
+                                  }`}
+                            </p>
+                          )
                         )}
                       </div>
                       <ChevronRight

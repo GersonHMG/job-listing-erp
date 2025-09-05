@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import { useState } from "react";
 import {
   Pencil,
   Trash2,
@@ -50,22 +50,29 @@ export function JobDetail({
             Cotizado el {fmtDate.format(new Date(job.quoteDate))}
           </p>
           {job.dueDate && (
-            <p
-              className={`text-xs mt-1 inline-flex items-center gap-1 ${
-                dLeft! < 0
-                  ? "text-rose-600"
-                  : dLeft! <= 7
-                  ? "text-amber-600"
-                  : "text-gray-500"
-              }`}
-            >
-              <CalendarClock size={12} />
-              {dLeft! >= 0
-                ? `Vence en ${dLeft} día${dLeft === 1 ? "" : "s"}`
-                : `Vencido hace ${Math.abs(dLeft!)} día${
-                    Math.abs(dLeft!) === 1 ? "" : "s"
-                  }`}
-            </p>
+            job.paid ? (
+              <p className="text-xs mt-1 inline-flex items-center gap-1 text-gray-500">
+                <CheckCircle2 className="text-emerald-600" size={12} />
+                Pago recibido: {fmtDate.format(new Date(job.dueDate))}
+              </p>
+            ) : (
+              <p
+                className={`text-xs mt-1 inline-flex items-center gap-1 ${
+                  dLeft! < 0
+                    ? "text-rose-600"
+                    : dLeft! <= 7
+                    ? "text-amber-600"
+                    : "text-gray-500"
+                }`}
+              >
+                <CalendarClock size={12} />
+                {dLeft! >= 0
+                  ? `Vence en ${dLeft} día${dLeft === 1 ? "" : "s"}`
+                  : `Vencido hace ${Math.abs(dLeft!)} día${
+                      Math.abs(dLeft!) === 1 ? "" : "s"
+                    }`}
+              </p>
+            )
           )}
         </div>
         <div className="flex items-center gap-2">
