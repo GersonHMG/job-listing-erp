@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { X, Trash2 } from "lucide-react";
-import { JobItem } from "../types";
+import { type JobItem } from "../types";
 import {
   parseNumber,
   addMonths,

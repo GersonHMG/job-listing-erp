@@ -7,7 +7,8 @@ import {
   CheckCircle2,
   FileText,
 } from "lucide-react";
-import { Expense, JobItem } from "./types";
+import { type Expense, type JobItem } from "./types";
+
 import {
   currency,
   parseNumber,
@@ -19,8 +20,6 @@ import { EmptyState } from "./components/EmptyState";
 import { Stat } from "./components/Stat";
 import { JobDetail } from "./components/JobDetail";
 import { JobModal } from "./components/JobModal";
-import { runUnitTests } from "./tests";
-
 export default function JobListingApp(): JSX.Element {
   const [jobs, setJobs] = useState<JobItem[]>(() => {
     try {
@@ -43,9 +42,6 @@ export default function JobListingApp(): JSX.Element {
     }
   }, [jobs]);
 
-  useEffect(() => {
-    runUnitTests();
-  }, []);
 
   const selectedJob = useMemo(
     () => jobs.find((j) => j.id === selectedId) || null,

@@ -8,7 +8,7 @@ import {
   FileText,
 } from "lucide-react";
 import { AnimatePresence, motion } from "framer-motion";
-import { Expense, JobItem } from "../types";
+import { type Expense, type JobItem } from "../types";
 import {
   currency,
   fmtDate,

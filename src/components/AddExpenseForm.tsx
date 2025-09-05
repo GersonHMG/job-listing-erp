@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { MoneyInput } from "./inputs";
-import { Expense } from "../types";
+import { type Expense } from "../types";
 import { parseNumber, formatNumberCL } from "../utils";
 
 export function AddExpenseForm({
