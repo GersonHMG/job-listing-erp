@@ -208,7 +208,7 @@ export default function JobListingApp(): JSX.Element {
                             }`}
                           >
                             {dLeft! >= 0
-                              ? `Vence en ${dLeft} día${
+                              ? `Factura vence en ${dLeft} día${
                                   dLeft === 1 ? "" : "s"
                                 }`
                               : `Vencido hace ${Math.abs(dLeft!)} día${

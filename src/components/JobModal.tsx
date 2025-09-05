@@ -160,7 +160,7 @@ export function JobModal({
                 />
               </div>
             </div>
-
+            
             <div className="flex items-center gap-2 mt-1">
               <input
                 id="paid"
@@ -169,12 +169,14 @@ export function JobModal({
                 onChange={(e) => setPaid(e.target.checked)}
                 className="rounded border-gray-300"
               />
-              <label htmlFor="paid" className="text-sm">
-                Pagado (si está off queda como
-                <span className="font-medium"> Facturado</span>)
-              </label>
-            </div>
+            
+            <label htmlFor="paid" className="text-sm">
+              Pagado 
+            </label>
+          
 
+            </div>
+               
             {error && <p className="text-xs text-rose-600">{error}</p>}
 
             <div className="flex items-center justify-between gap-2">
