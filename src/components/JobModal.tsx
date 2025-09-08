@@ -123,7 +123,7 @@ export function JobModal({
               <input
                 value={name}
                 onChange={(e) => setName(e.target.value)}
-                placeholder="Ej: Instalación eléctrica"
+                placeholder="Ej: Barco Nave Empresa"
                 className="mt-1 w-full rounded-xl border border-gray-200 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-gray-200"
               />
             </div>
