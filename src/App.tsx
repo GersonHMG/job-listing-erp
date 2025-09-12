@@ -6,9 +6,9 @@ import {
   BadgeDollarSign,
   CheckCircle2,
   FileText,
+  Settings,
 } from "lucide-react";
-import { type Expense, type JobItem } from "./types";
-
+import { type Expense, type JobItem, type Company, type AppData } from "./types";
 import {
   currency,
   parseNumber,
@@ -21,28 +21,51 @@ import { EmptyState } from "./components/EmptyState";
 import { Stat } from "./components/Stat";
 import { JobDetail } from "./components/JobDetail";
 import { JobModal } from "./components/JobModal";
-import appIcon from "./assets/app-icon.svg";
+import { Config } from "./components/Config"; // <-- Importa tu modal de configuración
+
 export default function JobListingApp(): JSX.Element {
   const [jobs, setJobs] = useState<JobItem[]>(() => {
     try {
       const raw = localStorage.getItem(storageKey);
-      return raw ? (JSON.parse(raw) as JobItem[]) : [];
+      if (!raw) return [];
+      const data = JSON.parse(raw);
+      if (Array.isArray(data)) return data as JobItem[]; // backward compat
+      if (data && typeof data === "object" && Array.isArray((data as AppData).jobs)) {
+        return (data as AppData).jobs;
+      }
+      return [];
     } catch {
       return [] as JobItem[];
+    }
+  });
+  const [companies, setCompanies] = useState<Company[]>(() => {
+    try {
+      const raw = localStorage.getItem(storageKey);
+      if (!raw) return [];
+      const data = JSON.parse(raw);
+      if (Array.isArray(data)) return [] as Company[]; // backward compat
+      if (data && typeof data === "object" && Array.isArray((data as AppData).companies)) {
+        return (data as AppData).companies;
+      }
+      return [] as Company[];
+    } catch {
+      return [] as Company[];
     }
   });
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [isNewJobOpen, setIsNewJobOpen] = useState(false);
   const [editingJob, setEditingJob] = useState<JobItem | null>(null);
   const [query, setQuery] = useState("");
+  const [showConfig, setShowConfig] = useState(false);
 
   useEffect(() => {
     try {
-      localStorage.setItem(storageKey, JSON.stringify(jobs));
+      const data: AppData = { jobs, companies };
+      localStorage.setItem(storageKey, JSON.stringify(data));
     } catch {
       /* ignore */
     }
-  }, [jobs]);
+  }, [jobs, companies]);
 
 
   const selectedJob = useMemo(
@@ -54,6 +77,21 @@ export default function JobListingApp(): JSX.Element {
     if (!q) return jobs;
     return jobs.filter((j) => j.name.toLowerCase().includes(q));
   }, [jobs, query]);
+
+  const getCompanyName = (companyId?: string | null) =>
+    companies.find((c) => c.id === companyId)?.name || "";
+
+  const upsertCompanyByName = (name: string): string => {
+    const trimmed = (name || "").trim();
+    if (!trimmed) return "";
+    const existing = companies.find(
+      (c) => c.name.trim().toLowerCase() === trimmed.toLowerCase()
+    );
+    if (existing) return existing.id;
+    const newCompany: Company = { id: rid(), name: trimmed };
+    setCompanies((prev) => [newCompany, ...prev]);
+    return newCompany.id;
+  };
 
   // Acciones trabajos
   const addJob = (job: Omit<JobItem, "id" | "expenses">) => {
@@ -73,14 +111,22 @@ export default function JobListingApp(): JSX.Element {
   };
 
   // Acciones gastos
-  const addExpense = (jobId: string, expense: Omit<Expense, "id" | "createdAt">) => {
+  const addExpense = (
+    jobId: string,
+    expense: Omit<Expense, "id" | "createdAt" | "jobId">
+  ) => {
     setJobs((prev) =>
       prev.map((j) =>
         j.id === jobId
           ? {
               ...j,
               expenses: [
-                { id: rid(), createdAt: new Date().toISOString(), ...expense },
+                {
+                  id: rid(),
+                  createdAt: new Date().toISOString(),
+                  jobId,
+                  ...expense,
+                },
                 ...(j.expenses || []),
               ],
             }
@@ -98,8 +144,8 @@ export default function JobListingApp(): JSX.Element {
         j.id === jobId
           ? {
               ...j,
-              expenses: (j.expenses || []).map((e) =>
-                e.id === expenseId ? { ...e, ...fields } : e
+              expenses: (j.expenses || []).map((le) =>
+                le.id === expenseId ? { ...le, ...fields } : le
               ),
             }
           : j
@@ -133,7 +179,15 @@ export default function JobListingApp(): JSX.Element {
 
   return (
     <div className="min-h-screen bg-white text-gray-900">
-      <header className="sticky top-0 z-10 bg-white/70 backdrop-blur border-b border-gray-100">
+      <header className="sticky top-0 z-10 bg-white/70 backdrop-blur border-b border-gray-100 relative">
+        {/* Config button in the corner */}
+        <button
+          className="absolute top-4 right-4 p-2 rounded-full hover:bg-gray-100 transition"
+          title="Configuración"
+          onClick={() => setShowConfig(true)}
+        >
+          <Settings size={20} />
+        </button>
         <div className="max-w-6xl mx-auto px-4 py-4 flex items-center gap-3">
           <div className="flex-1">
             <h1 > Listado de trabajos</h1>
@@ -198,6 +252,11 @@ export default function JobListingApp(): JSX.Element {
                     <div className="flex items-start justify-between gap-2">
                       <div className="pr-6">
                         <h3 className="font-medium leading-tight">{job.name}</h3>
+                        {job.companyId && (
+                          <p className="mt-1 text-[11px] text-gray-500">
+                            {getCompanyName(job.companyId)}
+                          </p>
+                        )}
                         {job.dueDate && (
                           isPaid ? (
                             <p className="mt-1 text-[11px] text-gray-500">
@@ -264,6 +323,7 @@ export default function JobListingApp(): JSX.Element {
               onTogglePaid={() =>
                 updateJob(selectedJob.id, { paid: !selectedJob.paid })
               }
+              companyName={getCompanyName(selectedJob.companyId)}
             />
           ) : (
             <div className="rounded-2xl border border-dashed border-gray-200 p-6 text-center text-sm text-gray-500">
@@ -288,7 +348,12 @@ export default function JobListingApp(): JSX.Element {
           }
         }}
         onDelete={(jobId) => deleteJob(jobId)}
+        companies={companies}
+        onUpsertCompany={(name) => upsertCompanyByName(name)}
       />
+
+      {/* Usa tu modal Config aquí */}
+      <Config open={showConfig} onClose={() => setShowConfig(false)} />
     </div>
   );
 }

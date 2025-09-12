@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { X, Trash2 } from "lucide-react";
-import { type JobItem } from "../types";
+import { type JobItem, type Company } from "../types";
 import {
   parseNumber,
   addMonths,
@@ -15,12 +15,16 @@ export function JobModal({
   onSubmit,
   onDelete,
   initial,
+  companies,
+  onUpsertCompany,
 }: {
   open: boolean;
   onClose: () => void;
   onSubmit: (job: Partial<JobItem>) => void;
   onDelete: (id: string) => void;
   initial?: JobItem;
+  companies: Company[];
+  onUpsertCompany: (name: string) => string;
 }) {
   const [name, setName] = useState<string>(initial?.name || "");
   const [quoteDisp, setQuoteDisp] = useState<string>(
@@ -40,6 +44,7 @@ export function JobModal({
   const [dueTouched, setDueTouched] = useState<boolean>(false);
   const [paid, setPaid] = useState<boolean>(!!initial?.paid);
   const [error, setError] = useState<string>("");
+  const [companyName, setCompanyName] = useState<string>("");
 
   useEffect(() => {
     if (!open) {
@@ -52,6 +57,7 @@ export function JobModal({
       setDueTouched(false);
       setPaid(false);
       setError("");
+      setCompanyName("");
     } else if (initial) {
       setName(initial.name || "");
       setQuoteDisp(
@@ -65,6 +71,12 @@ export function JobModal({
           : addMonths(initial.quoteDate, 1)
       );
       setPaid(!!initial.paid);
+      if (initial.companyId) {
+        const c = companies.find((c) => c.id === initial.companyId);
+        setCompanyName(c?.name || "");
+      } else {
+        setCompanyName("");
+      }
     }
   }, [open, initial]);
 
@@ -81,12 +93,15 @@ export function JobModal({
     if (val <= 0) return setError("La cotización debe ser mayor a 0.");
     if (!date) return setError("La fecha de la cotización es obligatoria.");
     if (!dueDate) return setError("La fecha de vencimiento es obligatoria.");
+    const trimmedCompany = companyName.trim();
+    const companyId = trimmedCompany ? onUpsertCompany(trimmedCompany) : undefined;
     onSubmit({
       name: name.trim(),
       quote: val,
       quoteDate: new Date(date).toISOString(),
       dueDate: new Date(dueDate).toISOString(),
       paid,
+      companyId,
     });
   };
 
@@ -126,6 +141,39 @@ export function JobModal({
                 placeholder="Ej: Barco Nave Empresa"
                 className="mt-1 w-full rounded-xl border border-gray-200 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-gray-200"
               />
+            </div>
+
+            <div>
+              <label className="text-xs text-gray-500">Empresa</label>
+              <input
+                value={companyName}
+                onChange={(e) => setCompanyName(e.target.value)}
+                placeholder="Ej: Acme Ltda."
+                className="mt-1 w-full rounded-xl border border-gray-200 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-gray-200"
+              />
+              {companies.length > 0 && (
+                <div className="mt-1 flex items-center gap-2">
+                  <label className="text-[11px] text-gray-500">Seleccionar existente</label>
+                  <select
+                    value={"__dummy__"}
+                    onChange={(e) => {
+                      const id = e.target.value;
+                      const c = companies.find((c) => c.id === id);
+                      if (c) setCompanyName(c.name);
+                    }}
+                    className="text-xs rounded-lg border border-gray-200 px-2 py-1 bg-white"
+                  >
+                    <option value="__dummy__" disabled>
+                      Elegir…
+                    </option>
+                    {companies.map((c) => (
+                      <option key={c.id} value={c.id}>
+                        {c.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
             </div>
 
             <div>

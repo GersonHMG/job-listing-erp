@@ -26,14 +26,16 @@ export function JobDetail({
   onDeleteExpense,
   onEditJob,
   onTogglePaid,
+  companyName,
 }: {
   job: JobItem;
   totals: { quote: number; totalExpenses: number; profit: number; margin: number };
-  onAddExpense: (e: { description: string; amount: number }) => void;
+  onAddExpense: (e: { description: string; amount: number; invoiceId?: string | null }) => void;
   onUpdateExpense: (id: string, fields: Partial<Expense>) => void;
   onDeleteExpense: (id: string) => void;
   onEditJob: () => void;
   onTogglePaid: () => void;
+  companyName?: string;
 }) {
   const [openForm, setOpenForm] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -46,6 +48,9 @@ export function JobDetail({
           <div className="flex items-center gap-2">
             <h2 className="font-semibold leading-tight">{job.name}</h2>
           </div>
+          {companyName && (
+            <p className="text-xs text-gray-500">{companyName}</p>
+          )}
           <p className="text-xs text-gray-500">
             Cotizado el {fmtDate.format(new Date(job.quoteDate))}
           </p>
@@ -131,9 +136,11 @@ export function JobDetail({
                   onAddExpense({
                     description: e.description,
                     amount: parseNumber(e.amount),
+                    invoiceId: e.invoiceId ?? null,
                   });
                   setOpenForm(false);
                 }}
+                invoices={job.invoices}
               />
             </motion.div>
           )}
@@ -154,9 +161,11 @@ export function JobDetail({
                     onUpdateExpense(e.id, {
                       description: vals.description.trim(),
                       amount: parseNumber(vals.amount),
+                      invoiceId: vals.invoiceId ?? null,
                     });
                     setEditingId(null);
                   }}
+                  invoices={job.invoices}
                 />
               ) : (
                 <div className="flex items-center justify-between gap-2">
@@ -167,6 +176,14 @@ export function JobDetail({
                     </p>
                   </div>
                   <div className="flex items-center gap-2">
+                    <span className="text-[11px] rounded-full border px-2 py-0.5 text-gray-600 border-gray-200">
+                      {e.invoiceId
+                        ? (() => {
+                            const inv = (job.invoices || []).find((i) => i.id === e.invoiceId);
+                            return inv ? `Factura #${inv.number}` : "Factura";
+                          })()
+                        : "General"}
+                    </span>
                     <span className="text-sm font-medium">
                       {currency.format(parseNumber(e.amount))}
                     </span>
