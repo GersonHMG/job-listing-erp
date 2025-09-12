@@ -36,11 +36,18 @@ export function JobModal({
       ? new Date(initial.quoteDate).toISOString()
       : new Date().toISOString()
   );
-  const [dueDate, setDueDate] = useState<string>(() =>
-    initial?.dueDate
-      ? new Date(initial.dueDate).toISOString()
-      : addMonths(new Date().toISOString(), 1)
-  );
+  // Nueva lógica para vencimiento
+  const [dueDays, setDueDays] = useState<15 | 30>(15);
+  const [dueDate, setDueDate] = useState<string>(() => {
+    if (initial?.dueDate) {
+      const diff = (new Date(initial.dueDate).getTime() - new Date(initial.quoteDate ?? new Date()).getTime()) / (1000 * 60 * 60 * 24);
+      return new Date(initial.dueDate).toISOString();
+    }
+    const baseDate = initial?.quoteDate ? new Date(initial.quoteDate) : new Date();
+    const due = new Date(baseDate);
+    due.setDate(due.getDate() + 15);
+    return due.toISOString();
+  });
   const [dueTouched, setDueTouched] = useState<boolean>(false);
   const [paid, setPaid] = useState<boolean>(!!initial?.paid);
   const [error, setError] = useState<string>("");
@@ -53,7 +60,11 @@ export function JobModal({
       setQuote(0);
       const todayISO = new Date().toISOString();
       setDate(todayISO);
-      setDueDate(addMonths(todayISO, 1));
+      // Por defecto, 15 días
+      setDueDays(15);
+      const due = new Date(todayISO);
+      due.setDate(due.getDate() + 15);
+      setDueDate(due.toISOString());
       setDueTouched(false);
       setPaid(false);
       setError("");
@@ -65,11 +76,21 @@ export function JobModal({
       );
       setQuote(parseNumber(initial.quote || ""));
       setDate(new Date(initial.quoteDate).toISOString());
-      setDueDate(
-        initial.dueDate
-          ? new Date(initial.dueDate).toISOString()
-          : addMonths(initial.quoteDate, 1)
-      );
+      // Detectar si el vencimiento es 15 o 30 días
+      if (initial.dueDate && initial.quoteDate) {
+        const diff = Math.round(
+          (new Date(initial.dueDate).getTime() - new Date(initial.quoteDate).getTime()) /
+            (1000 * 60 * 60 * 24)
+        );
+        setDueDays(diff <= 15 ? 15 : 30);
+        setDueDate(new Date(initial.dueDate).toISOString());
+      } else {
+        setDueDays(15);
+        const baseDate = initial.quoteDate ? new Date(initial.quoteDate) : new Date();
+        const due = new Date(baseDate);
+        due.setDate(due.getDate() + 15);
+        setDueDate(due.toISOString());
+      }
       setPaid(!!initial.paid);
       if (initial.companyId) {
         const c = companies.find((c) => c.id === initial.companyId);
@@ -78,13 +99,17 @@ export function JobModal({
         setCompanyName("");
       }
     }
-  }, [open, initial]);
+  }, [open, initial, companies]);
 
+  // Actualizar dueDate cuando cambia quoteDate o dueDays
   useEffect(() => {
-    if (!dueTouched && date) {
-      setDueDate(addMonths(date, 1));
+    if (date && dueDays) {
+      const baseDate = new Date(date);
+      const due = new Date(baseDate);
+      due.setDate(due.getDate() + dueDays);
+      setDueDate(due.toISOString());
     }
-  }, [date, dueTouched]);
+  }, [date, dueDays]);
 
   const handle = (e: React.FormEvent) => {
     e.preventDefault();
@@ -106,158 +131,157 @@ export function JobModal({
   };
 
   return (
-  <AnimatePresence>
-    {open && (
-      <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        exit={{ opacity: 0 }}
-        className="fixed inset-0 z-20 bg-black/30 flex items-center justify-center p-2"
-        onClick={onClose}
-      >
+    <AnimatePresence>
+      {open && (
         <motion.div
-          initial={{ y: 24, opacity: 0 }}
-          animate={{ y: 0, opacity: 1 }}
-          exit={{ y: 24, opacity: 0 }}
-          transition={{ type: "spring", stiffness: 260, damping: 24 }}
-          className="w-full max-w-md rounded-2xl bg-white p-4 shadow-xl"
-          onClick={(e) => e.stopPropagation()}
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          className="fixed inset-0 z-20 bg-black/30 flex items-center justify-center p-2"
+          onClick={onClose}
         >
-          <div className="flex items-center justify-between">
-            <h3 className="font-semibold">
-              {initial ? "Editar trabajo" : "Nuevo trabajo"}
-            </h3>
-            <button onClick={onClose} className="p-1 rounded-lg hover:bg-gray-50">
-              <X size={18} />
-            </button>
-          </div>
-
-          <form onSubmit={handle} className="mt-3 grid grid-cols-1 gap-3">
-            <div>
-              <label className="text-xs text-gray-500">Nombre del trabajo</label>
-              <input
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                placeholder="Ej: Barco Nave Empresa"
-                className="mt-1 w-full rounded-xl border border-gray-200 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-gray-200"
-              />
-            </div>
-
-            <div>
-              <label className="text-xs text-gray-500">Empresa</label>
-              <input
-                value={companyName}
-                onChange={(e) => setCompanyName(e.target.value)}
-                placeholder="Ej: Acme Ltda."
-                className="mt-1 w-full rounded-xl border border-gray-200 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-gray-200"
-              />
-              {companies.length > 0 && (
-                <div className="mt-1 flex items-center gap-2">
-                  <label className="text-[11px] text-gray-500">Seleccionar existente</label>
-                  <select
-                    value={"__dummy__"}
-                    onChange={(e) => {
-                      const id = e.target.value;
-                      const c = companies.find((c) => c.id === id);
-                      if (c) setCompanyName(c.name);
-                    }}
-                    className="text-xs rounded-lg border border-gray-200 px-2 py-1 bg-white"
-                  >
-                    <option value="__dummy__" disabled>
-                      Elegir…
-                    </option>
-                    {companies.map((c) => (
-                      <option key={c.id} value={c.id}>
-                        {c.name}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-              )}
-            </div>
-
-            <div>
-              <label className="text-xs text-gray-500">Cotización</label>
-              <MoneyInput
-                value={quoteDisp}
-                onChange={(pretty, num) => {
-                  setQuoteDisp(pretty);
-                  setQuote(num);
-                }}
-                placeholder="Ej: 1.500.000"
-              />
-            </div>
-
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <label className="text-xs text-gray-500">Fecha de la cotización</label>
-                <DateDMYInput
-                  value={date}
-                  onChange={(iso) => setDate(iso)}
-                  placeholder=""
-                />
-              </div>
-              <div>
-                <label className="text-xs text-gray-500">
-                  {paid
-                    ? "Fecha de facturación"
-                    : "Vencimiento de factura"}
-                </label>
-                <DateDMYInput
-                  value={dueDate}
-                  onChange={(iso) => {
-                    setDueTouched(true);
-                    setDueDate(iso);
-                  }}
-                  placeholder=""
-                />
-              </div>
-            </div>
-            
-            <div className="flex items-center gap-2 mt-1">
-              <input
-                id="paid"
-                type="checkbox"
-                checked={paid}
-                onChange={(e) => setPaid(e.target.checked)}
-                className="rounded border-gray-300"
-              />
-            
-            <label htmlFor="paid" className="text-sm">
-              Pagado 
-            </label>
-          
-
-            </div>
-               
-            {error && <p className="text-xs text-rose-600">{error}</p>}
-
-            <div className="flex items-center justify-between gap-2">
-              {initial ? (
-                <button
-                  type="button"
-                  onClick={() => {
-                    if (confirm("¿Eliminar este trabajo?")) onDelete(initial.id);
-                  }}
-                  className="text-xs rounded-xl border px-3 py-2 hover:bg-gray-50 inline-flex items-center gap-1 text-rose-600 border-rose-200"
-                >
-                  <Trash2 size={14} /> Eliminar trabajo
-                </button>
-              ) : (
-                <span />
-              )}
-
-              <button
-                type="submit"
-                className="rounded-2xl border border-gray-900 bg-gray-900 px-4 py-2 text-sm hover:bg-black"
-              >
-                {initial ? "Guardar cambios" : "Guardar"}
+          <motion.div
+            initial={{ y: 24, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            exit={{ y: 24, opacity: 0 }}
+            transition={{ type: "spring", stiffness: 260, damping: 24 }}
+            className="w-full max-w-md rounded-2xl bg-white p-4 shadow-xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between">
+              <h3 className="font-semibold">
+                {initial ? "Editar trabajo" : "Nuevo trabajo"}
+              </h3>
+              <button onClick={onClose} className="p-1 rounded-lg hover:bg-gray-50">
+                <X size={18} />
               </button>
             </div>
-          </form>
+
+            <form onSubmit={handle} className="mt-3 grid grid-cols-1 gap-3">
+              <div>
+                <label className="text-xs text-gray-500">Nombre del trabajo</label>
+                <input
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  placeholder="Ej: Barco Nave Empresa"
+                  className="mt-1 w-full rounded-xl border border-gray-200 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-gray-200"
+                />
+              </div>
+
+              <div>
+                <label className="text-xs text-gray-500">Empresa</label>
+                <input
+                  value={companyName}
+                  onChange={(e) => setCompanyName(e.target.value)}
+                  placeholder="Ej: Acme Ltda."
+                  className="mt-1 w-full rounded-xl border border-gray-200 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-gray-200"
+                />
+                {companies.length > 0 && (
+                  <div className="mt-1 flex items-center gap-2">
+                    <label className="text-[11px] text-gray-500">Seleccionar existente</label>
+                    <select
+                      value={"__dummy__"}
+                      onChange={(e) => {
+                        const id = e.target.value;
+                        const c = companies.find((c) => c.id === id);
+                        if (c) setCompanyName(c.name);
+                      }}
+                      className="text-xs rounded-lg border border-gray-200 px-2 py-1 bg-white"
+                    >
+                      <option value="__dummy__" disabled>
+                        Elegir…
+                      </option>
+                      {companies.map((c) => (
+                        <option key={c.id} value={c.id}>
+                          {c.name}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                )}
+              </div>
+
+              <div>
+                <label className="text-xs text-gray-500">Cotización</label>
+                <MoneyInput
+                  value={quoteDisp}
+                  onChange={(pretty, num) => {
+                    setQuoteDisp(pretty);
+                    setQuote(num);
+                  }}
+                  placeholder="Ej: 1.500.000"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="text-xs text-gray-500">Fecha de la cotización</label>
+                  <DateDMYInput
+                    value={date}
+                    onChange={(iso) => setDate(iso)}
+                    placeholder=""
+                  />
+                </div>
+                <div>
+                  <label className="text-xs text-gray-500">Vencimiento de factura</label>
+                  <select
+                    className="mt-1 w-full rounded-xl border border-gray-200 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-gray-200"
+                    value={dueDays}
+                    onChange={e => setDueDays(Number(e.target.value) as 15 | 30)}
+                  >
+                    <option value={15}>15 días</option>
+                    <option value={30}>30 días</option>
+                  </select>
+                  <div className="text-[11px] text-gray-500 mt-1">
+                    {`Vence el ${new Date(dueDate).toLocaleDateString("es-CL")}`}
+                  </div>
+                </div>
+              </div>
+
+              {/* Mostrar el checkbox de Pagado solo al editar */}
+              {initial && (
+                <div className="flex items-center gap-2 mt-1">
+                  <input
+                    id="paid"
+                    type="checkbox"
+                    checked={paid}
+                    onChange={(e) => setPaid(e.target.checked)}
+                    className="rounded border-gray-300"
+                  />
+                  <label htmlFor="paid" className="text-sm">
+                    Pagado
+                  </label>
+                </div>
+              )}
+
+              {error && <p className="text-xs text-rose-600">{error}</p>}
+
+              <div className="flex items-center justify-between gap-2">
+                {initial ? (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (confirm("¿Eliminar este trabajo?")) onDelete(initial.id);
+                    }}
+                    className="text-xs rounded-xl border px-3 py-2 hover:bg-gray-50 inline-flex items-center gap-1 text-rose-600 border-rose-200"
+                  >
+                    <Trash2 size={14} /> Eliminar trabajo
+                  </button>
+                ) : (
+                  <span />
+                )}
+
+                <button
+                  type="submit"
+                  className="rounded-2xl border border-gray-900 bg-gray-900 px-4 py-2 text-sm hover:bg-black"
+                >
+                  {initial ? "Guardar cambios" : "Guardar"}
+                </button>
+              </div>
+            </form>
+          </motion.div>
         </motion.div>
-      </motion.div>
-    )}
-  </AnimatePresence>
+      )}
+    </AnimatePresence>
   );
 }

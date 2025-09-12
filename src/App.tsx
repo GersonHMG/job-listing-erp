@@ -19,6 +19,7 @@ import {
 } from "./utils";
 import { EmptyState } from "./components/EmptyState";
 import { Stat } from "./components/Stat";
+import { Job } from "./components/Job";
 import { JobDetail } from "./components/JobDetail";
 import { JobModal } from "./components/JobModal";
 import { Config } from "./components/Config"; // <-- Importa tu modal de configuración
@@ -210,127 +211,35 @@ export default function JobListingApp(): JSX.Element {
         </div>
       </header>
 
-      <main className="max-w-6xl mx-auto px-4 py-6 grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <section className="lg:col-span-2 space-y-4">
-          <div className="flex items-center gap-2 rounded-2xl border border-gray-200 px-3 py-2">
-            <Search className="shrink-0" size={16} />
-            <input
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              placeholder="Buscar por nombre..."
-              className="w-full bg-transparent outline-none text-sm py-1"
-            />
+      <main className="max-w-6xl mx-auto px-4 py-6">
+        {filteredJobs.length === 0 ? (
+          <EmptyState onAdd={() => setIsNewJobOpen(true)} />
+        ) : (
+          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            {filteredJobs.map((job) => (
+              <Job
+                key={job.id}
+                job={job}
+                selected={selectedId === job.id}
+                onSelect={(id) => setSelectedId(selectedId === id ? null : id)}
+                getCompanyName={getCompanyName}
+                fmtDate={fmtDate}
+                daysUntil={daysUntil}
+                totals={totals}
+                // Props para JobDetail:
+                jobDetailProps={{
+                  totals: totals(job),
+                  onAddExpense: (e) => addExpense(job.id, e),
+                  onUpdateExpense: (eid, fields) => updateExpense(job.id, eid, fields),
+                  onDeleteExpense: (eid) => deleteExpense(job.id, eid),
+                  onEditJob: () => setEditingJob(job),
+                  onTogglePaid: () => updateJob(job.id, { paid: !job.paid }),
+                  companyName: getCompanyName(job.companyId),
+                }}
+              />
+            ))}
           </div>
-
-          {filteredJobs.length === 0 ? (
-            <EmptyState onAdd={() => setIsNewJobOpen(true)} />
-          ) : (
-            <div className="grid sm:grid-cols-2 gap-4">
-              {filteredJobs.map((job) => {
-                const t = totals(job);
-                const positive = t.profit >= 0;
-                const dLeft = job.dueDate ? daysUntil(job.dueDate) : null;
-                const isPaid = !!job.paid;
-                return (
-                  <button
-                    key={job.id}
-                    onClick={() => setSelectedId(job.id)}
-                    className={`relative group text-left rounded-2xl border px-4 py-4 transition hover:shadow-sm active:scale-[0.99] ${
-                      selectedId === job.id
-                        ? "border-gray-900"
-                        : "border-gray-200 hover:border-gray-300"
-                    }`}
-                  >
-                    <span className="absolute top-2 right-2">
-                      {isPaid ? (
-                        <CheckCircle2 className="text-emerald-600" size={16} />
-                      ) : (
-                        <FileText className="text-gray-500" size={16} />
-                      )}
-                    </span>
-
-                    <div className="flex items-start justify-between gap-2">
-                      <div className="pr-6">
-                        <h3 className="font-medium leading-tight">{job.name}</h3>
-                        {job.companyId && (
-                          <p className="mt-1 text-[11px] text-gray-500">
-                            {getCompanyName(job.companyId)}
-                          </p>
-                        )}
-                        {job.dueDate && (
-                          isPaid ? (
-                            <p className="mt-1 text-[11px] text-gray-500">
-                              Pago recibido: {fmtDate.format(new Date(job.dueDate))}
-                            </p>
-                          ) : (
-                            <p
-                              className={`mt-1 text-[11px] ${
-                                dLeft! < 0
-                                  ? "text-rose-600"
-                                  : dLeft! <= 7
-                                  ? "text-amber-600"
-                                  : "text-gray-500"
-                              }`}
-                            >
-                              {dLeft! >= 0
-                                ? `Factura vence en ${dLeft} día${
-                                    dLeft === 1 ? "" : "s"
-                                  }`
-                                : `Vencido hace ${Math.abs(dLeft!)} día${
-                                    Math.abs(dLeft!) === 1 ? "" : "s"
-                                  }`}
-                            </p>
-                          )
-                        )}
-                      </div>
-                      <ChevronRight
-                        className="opacity-0 group-hover:opacity-100 transition"
-                        size={18}
-                      />
-                    </div>
-
-                    <div className="mt-3 grid grid-cols-2 gap-3">
-                      <Stat label="Cotización" value={currency.format(t.quote)} />
-                      <Stat
-                        label="Rentabilidad"
-                        value={currency.format(t.profit)}
-                        tone={positive ? "positive" : "negative"}
-                        hint={
-                          t.quote > 0
-                            ? `${Math.round(t.margin * 100)}%`
-                            : undefined
-                        }
-                      />
-                    </div>
-                  </button>
-                );
-              })}
-            </div>
-          )}
-        </section>
-
-        <section className="lg:col-span-1">
-          {selectedJob ? (
-            <JobDetail
-              job={selectedJob}
-              totals={totals(selectedJob)}
-              onAddExpense={(e) => addExpense(selectedJob.id, e)}
-              onUpdateExpense={(eid, fields) =>
-                updateExpense(selectedJob.id, eid, fields)
-              }
-              onDeleteExpense={(eid) => deleteExpense(selectedJob.id, eid)}
-              onEditJob={() => setEditingJob(selectedJob)}
-              onTogglePaid={() =>
-                updateJob(selectedJob.id, { paid: !selectedJob.paid })
-              }
-              companyName={getCompanyName(selectedJob.companyId)}
-            />
-          ) : (
-            <div className="rounded-2xl border border-dashed border-gray-200 p-6 text-center text-sm text-gray-500">
-              Selecciona un trabajo para ver gastos y agregar nuevos.
-            </div>
-          )}
-        </section>
+        )}
       </main>
 
       <JobModal
