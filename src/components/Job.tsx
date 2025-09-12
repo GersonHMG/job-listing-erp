@@ -58,7 +58,7 @@ export const Job: React.FC<JobProps> = ({
           {isPaid ? (
             <CheckCircle2 className="text-emerald-600" size={16} />
           ) : (
-            <FileText className="text-gray-500" size={16} />
+            <FileText className="text-orange-500" size={16} />
           )}
         </span>
 
