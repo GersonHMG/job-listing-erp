@@ -6,9 +6,9 @@ import react from '@vitejs/plugin-react'
 declare const process: {
   env?: Record<string, string | undefined>
 }
-const repoName = process.env?.GITHUB_REPOSITORY?.split('/')[1] ?? ''
+//const repoName = process.env?.GITHUB_REPOSITORY?.split('/')[1] ?? ''
 
 export default defineConfig({
-  base: repoName ? `/${repoName}/` : '/',
+  base: '/job-listing-erp/', //repoName ? `/${repoName}/` : '/',
   plugins: [react()],
 })
