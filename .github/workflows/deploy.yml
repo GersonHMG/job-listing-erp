@@ -2,7 +2,7 @@ name: Alpha Page
 
 on:
   push:
-    branches: ["work"]
+    branches: ["main"]
 
 permissions:
   contents: read
